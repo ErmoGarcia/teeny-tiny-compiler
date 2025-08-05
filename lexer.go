@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type Lexer struct {
@@ -154,9 +155,34 @@ func getToken(lexer *Lexer) (Token, error) {
 	case "\x00":
 		token.kind = EOF
 	default:
-		return token, abort("Unknown token: " + lexer.curChar)
+		if isDigit(lexer.curChar) {
+			// Leading character is a digit, so this must be a number.
+			// Get all consecutive digits and decimal if there is one.
+			startPos := lexer.curPos
+			for isDigit(peek(lexer)) {
+				nextChar(lexer)
+			}
+			if peek(lexer) == "." { // Decimal!
+				nextChar(lexer)
+				if !isDigit(peek(lexer)) {
+					return token, abort("Illigal character in number.")
+				}
+				for isDigit(peek(lexer)) {
+					nextChar(lexer)
+				}
+			}
+			token.kind = NUMBER
+			token.text = lexer.source[startPos : lexer.curPos+1] // Get the substring.
+		} else {
+			return token, abort("Unknown token: " + lexer.curChar)
+		}
 	}
 
 	nextChar(lexer)
 	return token, nil
+}
+
+func isDigit(s string) bool {
+	_, err := strconv.Atoi(s)
+	return err == nil
 }
