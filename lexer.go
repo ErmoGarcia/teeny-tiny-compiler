@@ -81,13 +81,18 @@ func skipWhitespace(lexer *Lexer) {
 }
 
 // Skip comments in the code.
-func skipComment() {
-
+func skipComment(lexer *Lexer) {
+	if lexer.curChar == "#" {
+		for lexer.curChar != "\n" {
+			nextChar(lexer)
+		}
+	}
 }
 
 // Return the next token.
 func getToken(lexer *Lexer) (Token, error) {
 	skipWhitespace(lexer)
+	skipComment(lexer)
 
 	token := Token{text: lexer.curChar}
 	switch lexer.curChar {
@@ -131,6 +136,19 @@ func getToken(lexer *Lexer) (Token, error) {
 		} else {
 			return token, abort("Expected !=, got !" + peek(lexer))
 		}
+	case "\"": // Get characters between quotations
+		nextChar(lexer)
+		startPos := lexer.curPos
+		for lexer.curChar != "\"" {
+			// Don't allow special characters in the string. No escape characters, newlines, tabs, or %.
+			// We will be using C's printf on this string.
+			if lexer.curChar == "\r" || lexer.curChar == "\t" || lexer.curChar == "\\" || lexer.curChar == "%" {
+				return token, abort("Illegal character in string.")
+			}
+			nextChar(lexer)
+		}
+		token.kind = STRING
+		token.text = lexer.source[startPos:lexer.curPos] // Get the substring.
 	case "\n":
 		token.kind = NEWLINE
 	case "\x00":
