@@ -29,6 +29,7 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	lexer := Lexer{curChar: ""}
 	parser := Parser{lexer: &lexer}
+	fmt.Println("PROGRAM")
 	for scanner.Scan() {
 		lexer.source = scanner.Text() + "\n"
 		lexer.curPos = -1
@@ -36,13 +37,16 @@ func main() {
 		nextToken(&parser)
 		nextToken(&parser) // Call this twice to initialize current and peek.
 		// for peek(&lexer) != "\x00" {
-		for lexer.curPos < len(lexer.source) {
-			// curChar := nextChar(&lexer)
-			// fmt.Printf("%s\n", curChar)
-			token, err := getToken(&lexer)
-			check(err)
-			fmt.Printf("%s: %d\n", token.text, token.kind)
-		}
+		// for lexer.curPos < len(lexer.source) {
+		// 	// curChar := nextChar(&lexer)
+		// 	// fmt.Printf("%s\n", curChar)
+		// 	token, err := getToken(&lexer)
+		// 	check(err)
+		// 	fmt.Printf("%s: %d\n", token.text, token.kind)
+		// }
+
+		program(&parser) // Start the parser.
 	}
+	fmt.Println("Parsing completed.")
 	check(scanner.Err())
 }
