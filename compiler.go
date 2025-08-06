@@ -27,9 +27,14 @@ func main() {
 	}()
 
 	scanner := bufio.NewScanner(file)
+	lexer := Lexer{curChar: ""}
+	parser := Parser{lexer: &lexer}
 	for scanner.Scan() {
-		lexer := Lexer{scanner.Text() + "\n", -1, ""}
+		lexer.source = scanner.Text() + "\n"
+		lexer.curPos = -1
 		nextChar(&lexer)
+		nextToken(&parser)
+		nextToken(&parser) // Call this twice to initialize current and peek.
 		// for peek(&lexer) != "\x00" {
 		for lexer.curPos < len(lexer.source) {
 			// curChar := nextChar(&lexer)
