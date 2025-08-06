@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
+	"unicode"
 )
 
 type Lexer struct {
@@ -96,6 +98,44 @@ func getToken(lexer *Lexer) (Token, error) {
 	skipComment(lexer)
 
 	token := Token{text: lexer.curChar}
+
+	if isDigit(lexer.curChar) {
+		// Leading character is a digit, so this must be a number.
+		// Get all consecutive digits and decimal if there is one.
+		startPos := lexer.curPos
+		for isDigit(peek(lexer)) {
+			nextChar(lexer)
+		}
+		if peek(lexer) == "." { // Decimal!
+			nextChar(lexer)
+			if !isDigit(peek(lexer)) {
+				return token, abort("Illegal character in number.")
+			}
+			for isDigit(peek(lexer)) {
+				nextChar(lexer)
+			}
+		}
+		token.kind = NUMBER
+		token.text = lexer.source[startPos : lexer.curPos+1] // Get the substring.
+
+		nextChar(lexer)
+		return token, nil
+	} else if isLetter(lexer.curChar) {
+		// Leading character is a letter, so this must be an identifier or a keyword.
+		// Get all consecutive alpha numeric characters.
+		startPos := lexer.curPos
+		for isLetter(peek(lexer)) || isDigit(peek(lexer)) {
+			nextChar(lexer)
+		}
+		// Check if the token is in the list of keywords.
+		tokText := lexer.source[startPos : lexer.curPos+1] // Get the substring.
+		token.kind = getKeyword(tokText)
+		token.text = tokText
+
+		nextChar(lexer)
+		return token, nil
+	}
+
 	switch lexer.curChar {
 	case "+":
 		token.kind = PLUS
@@ -155,34 +195,52 @@ func getToken(lexer *Lexer) (Token, error) {
 	case "\x00":
 		token.kind = EOF
 	default:
-		if isDigit(lexer.curChar) {
-			// Leading character is a digit, so this must be a number.
-			// Get all consecutive digits and decimal if there is one.
-			startPos := lexer.curPos
-			for isDigit(peek(lexer)) {
-				nextChar(lexer)
-			}
-			if peek(lexer) == "." { // Decimal!
-				nextChar(lexer)
-				if !isDigit(peek(lexer)) {
-					return token, abort("Illigal character in number.")
-				}
-				for isDigit(peek(lexer)) {
-					nextChar(lexer)
-				}
-			}
-			token.kind = NUMBER
-			token.text = lexer.source[startPos : lexer.curPos+1] // Get the substring.
-		} else {
-			return token, abort("Unknown token: " + lexer.curChar)
-		}
+		return token, abort("Unknown token: " + lexer.curChar)
 	}
 
 	nextChar(lexer)
 	return token, nil
 }
 
+func getKeyword(text string) TokenType {
+	switch text {
+	case "LABEL":
+		return LABEL
+	case "GOTO":
+		return GOTO
+	case "PRINT":
+		return PRINT
+	case "INPUT":
+		return INPUT
+	case "LET":
+		return LET
+	case "IF":
+		return IF
+	case "THEN":
+		return THEN
+	case "ENDIF":
+		return ENDIF
+	case "WHILE":
+		return WHILE
+	case "REPEAT":
+		return REPEAT
+	case "ENDWHILE":
+		return ENDWHILE
+	default:
+		return IDENT
+	}
+}
+
+// TODO: Use a rune instead of string for curChar and get rid of these functions
+// Use unicode.IsNumber
 func isDigit(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil
+}
+
+// Use unicode.IsLetter
+func isLetter(s string) bool {
+	return !strings.ContainsFunc(s, func(r rune) bool {
+		return !unicode.IsLetter(r)
+	})
 }
