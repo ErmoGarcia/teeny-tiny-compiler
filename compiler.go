@@ -26,15 +26,18 @@ func main() {
 		curPos:  -1,
 		curChar: "",
 	}
+	emitter := Emitter{fullPath: "out.c"}
 	parser := Parser{
 		lexer:          &lexer,
+		emitter:        &emitter,
 		symbols:        make(map[string]int),
 		labelsDeclared: make(map[string]int),
 		labelsGotoed:   make(map[string]int),
 	}
 	nextChar(&lexer)
 	nextToken(&parser)
-	nextToken(&parser) // Call this twice to initialize current and peek.
-	program(&parser)   // Start the parser.
+	nextToken(&parser)  // Call this twice to initialize current and peek.
+	program(&parser)    // Start the parser.
+	writeFile(&emitter) // Write the output to file.
 	fmt.Println("Parsing completed.")
 }
